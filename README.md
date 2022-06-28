@@ -138,6 +138,8 @@ For use in move_base(\_flex) as "base_global_planner"="full_coverage_path_planne
 
 * **`robot_radius`**: robot radius, which is used by the CPP algorithm to check for collisions with static map
 * **`tool_radius`**: tool radius, which is used by the CPP algorithm to discretize the space and find a full coverage plan
+* **`use_map_server`**: diable to use map server to get the map. Default: `true`
+* **`map_topic`**: if "use_map_server=false", it will subscribe to this map topic.
 
 
 ## References

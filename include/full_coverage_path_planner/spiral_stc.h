@@ -69,6 +69,8 @@ private:
    * @param  costmap A pointer to the ROS wrapper of the costmap to use for planning
    */
   void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+
+  void mapCb(nav_msgs::OccupancyGrid map);
 };
 
 }  // namespace full_coverage_path_planner

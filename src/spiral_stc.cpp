@@ -1,6 +1,7 @@
 //
 // Copyright [2020] Nobleo Technology"  [legal/copyright]
 //
+#include <ros/ros.h>
 #include <algorithm>
 #include <iostream>
 #include <list>
@@ -15,6 +16,16 @@ PLUGINLIB_EXPORT_CLASS(full_coverage_path_planner::SpiralSTC, nav_core::BaseGlob
 
 namespace full_coverage_path_planner
 {
+
+nav_msgs::OccupancyGrid mapData;
+ros::Subscriber mapSubscriber;
+
+void SpiralSTC::mapCb(nav_msgs::OccupancyGrid map)
+{
+  mapData = map;
+  mapReceived_ = true;
+}
+
 void SpiralSTC::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
 {
   if (!initialized_)
@@ -33,6 +44,16 @@ void SpiralSTC::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_r
     // Define  tool radius (radius) parameter
     float tool_radius_default = 0.5f;
     private_named_nh.param<float>("tool_radius", tool_radius_, tool_radius_default);
+
+    bool use_map_server_default = true;
+    private_named_nh.param<bool>("use_map_server", use_map_server_, use_map_server_default);
+    if (!use_map_server_)
+    {
+      string map_topic_default = "/map";
+      private_named_nh.param<string>("map_topic", map_topic_, map_topic_default);
+      mapSubscriber = nh.subscribe(map_topic_, 1000, &SpiralSTC::mapCb, this);
+    }
+
     initialized_ = true;
   }
 }
@@ -229,18 +250,35 @@ bool SpiralSTC::makePlan(const geometry_msgs::PoseStamped& start, const geometry
 
   /********************** Get grid from server **********************/
   std::vector<std::vector<bool> > grid;
-  nav_msgs::GetMap grid_req_srv;
-  ROS_INFO("Requesting grid!!");
-  if (!cpp_grid_client_.call(grid_req_srv))
-  {
-    ROS_ERROR("Could not retrieve grid from map_server");
-    return false;
-  }
 
-  if (!parseGrid(grid_req_srv.response.map, grid, robot_radius_ * 2, tool_radius_ * 2, start, startPoint))
+  if (!use_map_server_)
   {
-    ROS_ERROR("Could not parse retrieved grid");
-    return false;
+    ROS_INFO("Use local map data!!");
+    if (!mapReceived_)
+    {
+      ROS_ERROR("map data null!");
+      return false;
+    }
+    if (!parseGrid(mapData, grid, robot_radius_ * 2, tool_radius_ * 2, start, startPoint))
+    {
+      ROS_ERROR("Could not parse retrieved grid");
+      return false;
+    }
+  } 
+  else 
+  {
+    nav_msgs::GetMap grid_req_srv;
+    ROS_INFO("Requesting grid!!");
+    if (!cpp_grid_client_.call(grid_req_srv))
+    {
+      ROS_ERROR("Could not retrieve grid from map_server");
+      return false;
+    }
+    if (!parseGrid(grid_req_srv.response.map, grid, robot_radius_ * 2, tool_radius_ * 2, start, startPoint))
+    {
+      ROS_ERROR("Could not parse retrieved grid");
+      return false;
+    }
   }
 
 #ifdef DEBUG_PLOT

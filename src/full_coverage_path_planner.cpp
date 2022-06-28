@@ -32,7 +32,7 @@
 // Default Constructor
 namespace full_coverage_path_planner
 {
-FullCoveragePathPlanner::FullCoveragePathPlanner() : initialized_(false)
+FullCoveragePathPlanner::FullCoveragePathPlanner() : initialized_(false), mapReceived_(false)
 {
 }
 
